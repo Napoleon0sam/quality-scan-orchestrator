@@ -14,6 +14,7 @@ class CiWorkflowContractTests(unittest.TestCase):
         text = workflow.read_text(encoding="utf-8")
         self.assertIn("CodeScan CI", text)
         self.assertIn("push:", text)
+        self.assertIn("  push:\n    branches:\n      - main", text)
         self.assertIn("pull_request:", text)
         self.assertIn("workflow_dispatch:", text)
         self.assertIn("actions/checkout@", text)
