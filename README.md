@@ -80,6 +80,9 @@ The workflow runs on:
 It compiles Python files, runs unit tests, runs CodeScan on a clean fixture,
 and uploads the generated reports as a GitHub Actions artifact.
 
+For learning checkpoints, each trigger should be backed by its run URL and the
+uploaded `codescan-reports` artifact.
+
 Recommended GitHub repository:
 
 ```text
