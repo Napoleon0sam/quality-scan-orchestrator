@@ -38,6 +38,9 @@ class CiWorkflowContractTests(unittest.TestCase):
         workflow_text = workflow.read_text(encoding="utf-8")
         self.assertIn("Run SonarQube Cloud scan", workflow_text)
         self.assertIn("SonarSource/sonarqube-scan-action@", workflow_text)
+        self.assertIn("args: >", workflow_text)
+        self.assertIn("-Dsonar.qualitygate.wait=true", workflow_text)
+        self.assertIn("-Dsonar.qualitygate.timeout=300", workflow_text)
         self.assertIn("SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}", workflow_text)
 
         properties = sonar_properties.read_text(encoding="utf-8")
