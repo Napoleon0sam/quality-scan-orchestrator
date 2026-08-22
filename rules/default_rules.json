@@ -1,0 +1,40 @@
+{
+  "function_length_limit": 20,
+  "rules": [
+    {
+      "id": "QSO-PY-SEC-001",
+      "category": "Security",
+      "severity": "HIGH",
+      "message": "Avoid eval or exec.",
+      "remediation": "Use explicit parsing or a constrained dispatcher."
+    },
+    {
+      "id": "QSO-PY-SEC-002",
+      "category": "Security",
+      "severity": "HIGH",
+      "message": "Avoid unsafe shell execution.",
+      "remediation": "Use an argument list and keep shell disabled."
+    },
+    {
+      "id": "QSO-PY-SEC-003",
+      "category": "Security",
+      "severity": "HIGH",
+      "message": "Avoid hard-coded secrets.",
+      "remediation": "Load secrets from protected environment or secret storage."
+    },
+    {
+      "id": "QSO-PY-REL-001",
+      "category": "Reliability",
+      "severity": "MEDIUM",
+      "message": "Avoid bare except handlers.",
+      "remediation": "Catch a specific exception and preserve diagnostic context."
+    },
+    {
+      "id": "QSO-PY-MNT-001",
+      "category": "Maintainability",
+      "severity": "MEDIUM",
+      "message": "Function exceeds the configured line limit.",
+      "remediation": "Split the function into focused units with explicit interfaces."
+    }
+  ]
+}
