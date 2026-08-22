@@ -11,6 +11,7 @@ This project demonstrates a small but complete Python code scanning pipeline:
 - FULL / FAST / AUTO scan scope
 - JSON and HTML reports
 - GitHub Actions CI workflow
+- SonarQube Cloud CI analysis wiring
 
 ## Local Commands
 
@@ -78,10 +79,30 @@ The workflow runs on:
 - manual workflow dispatch
 
 It compiles Python files, runs unit tests, runs CodeScan on a clean fixture,
-and uploads the generated reports as a GitHub Actions artifact.
+uploads the generated reports as a GitHub Actions artifact, and then runs
+SonarQube Cloud analysis.
 
 For learning checkpoints, each trigger should be backed by its run URL and the
 uploaded `codescan-reports` artifact.
+
+## SonarQube Cloud
+
+This project uses SonarQube Cloud as an external quality platform. It does not
+self-host SonarQube Server.
+
+The repository stores only non-sensitive SonarQube project metadata in:
+
+```text
+sonar-project.properties
+```
+
+The authentication token must be stored as a GitHub Actions repository secret:
+
+```text
+SONAR_TOKEN
+```
+
+Do not commit SonarQube tokens to this repository.
 
 Recommended GitHub repository:
 
