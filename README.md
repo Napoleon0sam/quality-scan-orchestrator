@@ -104,6 +104,19 @@ SONAR_TOKEN
 
 Do not commit SonarQube tokens to this repository.
 
+The GitHub Actions workflow waits for the SonarQube Cloud Quality Gate result:
+
+```text
+sonar.qualitygate.wait=true
+```
+
+If the Sonar Quality Gate fails or times out, the SonarQube scan step fails the
+workflow. This is separate from GitHub branch protection, which must be enabled
+in repository settings before failed checks can block merges.
+
+The workflow runs on pull requests and on pushes to `main`; feature branch
+pushes should be validated through a pull request.
+
 Recommended GitHub repository:
 
 ```text

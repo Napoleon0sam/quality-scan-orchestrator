@@ -2,6 +2,8 @@ name: CodeScan CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
@@ -48,5 +50,9 @@ jobs:
 
       - name: Run SonarQube Cloud scan
         uses: SonarSource/sonarqube-scan-action@v8.2.1
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
