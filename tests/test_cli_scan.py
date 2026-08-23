@@ -95,6 +95,7 @@ class CliScanTests(unittest.TestCase):
             self.assertTrue((output / "scan-scope.json").is_file())
             self.assertTrue((output / "quality-gate.json").is_file())
             self.assertTrue((output / "codescan-report.html").is_file())
+            self.assertTrue((output / "sonar-external-issues.json").is_file())
             self.assertTrue((output / "run-manifest.json").is_file())
 
             scan_result = json.loads(

@@ -12,6 +12,7 @@ This project demonstrates a small but complete Python code scanning pipeline:
 - JSON and HTML reports
 - GitHub Actions CI workflow
 - SonarQube Cloud CI analysis wiring
+- SonarQube generic external issues export
 
 ## Local Commands
 
@@ -55,6 +56,7 @@ Each scan writes:
 - `scan-scope.json`
 - `quality-gate.json`
 - `codescan-report.html`
+- `sonar-external-issues.json`
 - `run-manifest.json`
 
 ## Exit Codes
@@ -107,12 +109,22 @@ Do not commit SonarQube tokens to this repository.
 The GitHub Actions workflow waits for the SonarQube Cloud Quality Gate result:
 
 ```text
+sonar.externalIssuesReportPaths=reports/ci_target_full/sonar-external-issues.json
 sonar.qualitygate.wait=true
 ```
 
 If the Sonar Quality Gate fails or times out, the SonarQube scan step fails the
 workflow. This is separate from GitHub branch protection, which must be enabled
 in repository settings before failed checks can block merges.
+
+The workflow lets the CodeScan step continue long enough for SonarQube Cloud to
+import `sonar-external-issues.json`, then enforces the CodeScan result in a
+separate step. This keeps the native CodeScan gate meaningful while still
+allowing SonarQube Cloud to act as the shared quality dashboard.
+
+The CI CodeScan command passes `--sonar-base-dir .` so external issue file paths
+are written relative to the same repository root used by SonarQube Cloud
+analysis.
 
 The workflow runs on pull requests and on pushes to `main`; feature branch
 pushes should be validated through a pull request.

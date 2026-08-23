@@ -32,6 +32,8 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Run CodeScan on CI target
+        id: codescan
+        continue-on-error: true
         env:
           PYTHONPATH: src
         run: >
@@ -39,6 +41,7 @@ jobs:
           --project tests/fixtures/ci_target_project
           --config rules/default_rules.json
           --output reports/ci_target_full
+          --sonar-base-dir .
           --mode FULL
 
       - name: Upload CodeScan reports
@@ -52,7 +55,12 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v8.2.1
         with:
           args: >
+            -Dsonar.externalIssuesReportPaths=reports/ci_target_full/sonar-external-issues.json
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Enforce CodeScan quality gate
+        if: ${{ always() && steps.codescan.outcome == 'failure' }}
+        run: exit 1
