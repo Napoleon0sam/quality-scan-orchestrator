@@ -13,6 +13,7 @@ This project demonstrates a small but complete Python code scanning pipeline:
 - GitHub Actions CI workflow
 - SonarQube Cloud CI analysis wiring
 - SonarQube generic external issues export
+- baseline support for existing findings
 
 ## Local Commands
 
@@ -47,6 +48,51 @@ python -m quality_scanner scan `
   --output ".\reports\ci_auto_full" `
   --mode AUTO
 ```
+
+## Baseline: only block new findings
+
+The scanner supports two different meanings of baseline:
+
+- `--baseline`: a Git revision used by FAST or AUTO mode to find changed files
+- `--baseline-file`: a JSON file of known finding fingerprints used by the quality gate
+
+Create a findings baseline from the current scan:
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m quality_scanner scan `
+  --project ".\tests\fixtures\vulnerable_project" `
+  --config ".\rules\default_rules.json" `
+  --output ".\reports\baseline_seed" `
+  --mode FULL `
+  --write-baseline ".\codescan-baseline.json"
+```
+
+The command writes the baseline even when the current findings make the gate
+return exit code `1`. That is intentional: this is a one-time maintenance
+operation that records the current technical debt.
+
+Use the baseline on later scans:
+
+```powershell
+$env:PYTHONPATH = "$PWD\src"
+python -m quality_scanner scan `
+  --project ".\tests\fixtures\vulnerable_project" `
+  --config ".\rules\default_rules.json" `
+  --output ".\reports\with_baseline" `
+  --mode FULL `
+  --baseline-file ".\codescan-baseline.json"
+```
+
+Existing findings remain visible in the reports but are marked `EXISTING` and
+do not fail the gate. A finding whose fingerprint is not in the file is marked
+`NEW`; a new HIGH or CRITICAL finding fails the gate. The JSON and HTML reports
+also include `new_findings` and severity-specific `new_*` counters.
+
+The baseline stores fingerprints and location metadata, but not source
+snippets. The current fingerprint includes rule ID, path, line, and message;
+moving an issue to another line can therefore make it appear as a new finding.
+That is a known limitation to address when improving issue tracking.
 
 ## Report Files
 
@@ -83,6 +129,11 @@ The workflow runs on:
 It compiles Python files, runs unit tests, runs CodeScan on a clean fixture,
 uploads the generated reports as a GitHub Actions artifact, and then runs
 SonarQube Cloud analysis.
+
+The repository currently demonstrates baseline behavior locally through the
+CLI. The CI example still scans a clean fixture and does not yet apply a
+repository-specific `--baseline-file`; connecting that baseline to the real CI
+target is the next operational step.
 
 For learning checkpoints, each trigger should be backed by its run URL and the
 uploaded `codescan-reports` artifact.

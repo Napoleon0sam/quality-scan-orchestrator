@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -112,6 +113,11 @@ class CliScanTests(unittest.TestCase):
                     "high_count": 4,
                     "medium_count": 2,
                     "low_count": 0,
+                    "new_findings": 6,
+                    "new_critical_count": 0,
+                    "new_high_count": 4,
+                    "new_medium_count": 2,
+                    "new_low_count": 0,
                 },
                 scan_result["summary"],
             )
@@ -142,6 +148,135 @@ class CliScanTests(unittest.TestCase):
             html = (output / "codescan-report.html").read_text(encoding="utf-8")
             self.assertIn("QSO-PY-SEC-001", html)
             self.assertNotIn("fixture-secret-not-real", html)
+
+    def test_baseline_ignores_existing_findings_but_blocks_new_findings(self) -> None:
+        fixture = (
+            Path(__file__).resolve().parents[1]
+            / "tests/fixtures/vulnerable_project"
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "project"
+            shutil.copytree(fixture, root)
+            baseline_path = Path(tmp) / "codescan-baseline.json"
+            initial_output = Path(tmp) / "initial-reports"
+
+            initial_result = main(
+                [
+                    "scan",
+                    "--project",
+                    str(root),
+                    "--config",
+                    "rules/default_rules.json",
+                    "--output",
+                    str(initial_output),
+                    "--write-baseline",
+                    str(baseline_path),
+                ]
+            )
+
+            self.assertEqual(1, initial_result)
+            self.assertTrue(baseline_path.is_file())
+
+            existing_output = Path(tmp) / "existing-reports"
+            existing_result = main(
+                [
+                    "scan",
+                    "--project",
+                    str(root),
+                    "--config",
+                    "rules/default_rules.json",
+                    "--output",
+                    str(existing_output),
+                    "--baseline-file",
+                    str(baseline_path),
+                ]
+            )
+
+            self.assertEqual(0, existing_result)
+            existing_gate = json.loads(
+                (existing_output / "quality-gate.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual("PASS", existing_gate["status"])
+            existing_scan = json.loads(
+                (existing_output / "scan-result.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(6, existing_scan["summary"]["findings"])
+            self.assertEqual(0, existing_scan["summary"]["new_findings"])
+            self.assertTrue(
+                all(
+                    finding["baseline_status"] == "EXISTING"
+                    for finding in existing_scan["findings"]
+                )
+            )
+            existing_html = (
+                existing_output / "codescan-report.html"
+            ).read_text(encoding="utf-8")
+            self.assertIn("EXISTING", existing_html)
+
+            (root / "new.py").write_text(
+                "def run(value):\n"
+                "    return eval(value)\n",
+                encoding="utf-8",
+            )
+            new_output = Path(tmp) / "new-reports"
+            new_result = main(
+                [
+                    "scan",
+                    "--project",
+                    str(root),
+                    "--config",
+                    "rules/default_rules.json",
+                    "--output",
+                    str(new_output),
+                    "--baseline-file",
+                    str(baseline_path),
+                ]
+            )
+
+            self.assertEqual(1, new_result)
+            new_scan = json.loads(
+                (new_output / "scan-result.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(7, new_scan["summary"]["findings"])
+            self.assertEqual(1, new_scan["summary"]["new_findings"])
+            self.assertEqual(1, new_scan["summary"]["new_high_count"])
+            new_findings = [
+                finding
+                for finding in new_scan["findings"]
+                if finding["baseline_status"] == "NEW"
+            ]
+            self.assertEqual(["new.py"], [finding["path"] for finding in new_findings])
+            new_html = (new_output / "codescan-report.html").read_text(encoding="utf-8")
+            self.assertIn("NEW", new_html)
+
+    def test_scan_command_rejects_malformed_findings_baseline(self) -> None:
+        root = (
+            Path(__file__).resolve().parents[1]
+            / "tests/fixtures/clean_project"
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            baseline_path = Path(tmp) / "codescan-baseline.json"
+            baseline_path.write_text(
+                '{"schema_version": 1, "findings": [{"fingerprint": "bad"}]}\n',
+                encoding="utf-8",
+            )
+            result = main(
+                [
+                    "scan",
+                    "--project",
+                    str(root),
+                    "--config",
+                    "rules/default_rules.json",
+                    "--output",
+                    str(Path(tmp) / "reports"),
+                    "--baseline-file",
+                    str(baseline_path),
+                ]
+            )
+
+        self.assertEqual(3, result)
 
     def test_scan_command_writes_error_report_for_syntax_error(self) -> None:
         root = (

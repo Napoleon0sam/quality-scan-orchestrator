@@ -45,12 +45,28 @@ def write_json_reports(
     tool_version: str,
     started_at: str,
     finished_at: str,
+    new_fingerprints: frozenset[str],
+    baseline_file: str | None,
+    baseline_fingerprint_count: int,
 ) -> None:
+    findings_payload = []
+    for finding in findings:
+        payload = finding.to_dict()
+        payload["baseline_status"] = (
+            "NEW" if finding.fingerprint in new_fingerprints else "EXISTING"
+        )
+        findings_payload.append(payload)
+
     write_json(
         output_dir / "scan-result.json",
         {
             "summary": summary.to_dict(),
-            "findings": [finding.to_dict() for finding in findings],
+            "baseline": {
+                "applied": baseline_file is not None,
+                "file": baseline_file,
+                "known_findings": baseline_fingerprint_count,
+            },
+            "findings": findings_payload,
             "errors": list(errors),
         },
     )
@@ -72,6 +88,8 @@ def write_json_reports(
             "report_directory": str(output_dir),
             "started_at": started_at,
             "finished_at": finished_at,
+            "baseline_file": baseline_file,
+            "baseline_fingerprint_count": baseline_fingerprint_count,
         },
     )
 
@@ -83,9 +101,12 @@ def write_html_report(
     errors: tuple[str, ...],
     summary: ScanSummary,
     gate: GateResult,
+    new_fingerprints: frozenset[str],
+    baseline_file: str | None,
 ) -> None:
     finding_rows = "\n".join(
         "<tr>"
+        f"<td>{'NEW' if finding.fingerprint in new_fingerprints else 'EXISTING'}</td>"
         f"<td>{escape(finding.severity.value)}</td>"
         f"<td>{escape(finding.rule_id)}</td>"
         f"<td>{escape(finding.path)}:{finding.line}</td>"
@@ -95,7 +116,7 @@ def write_html_report(
         for finding in findings
     )
     if not finding_rows:
-        finding_rows = '<tr><td colspan="5">No findings</td></tr>'
+        finding_rows = '<tr><td colspan="6">No findings</td></tr>'
 
     error_items = "\n".join(
         f"<li>{escape(error)}</li>"
@@ -121,6 +142,7 @@ def write_html_report(
   <h1>CodeScan Report</h1>
   <p>Status: <strong>{escape(gate.status.value)}</strong></p>
   <p>{escape(gate.reason)}</p>
+  <p>Baseline: {escape(baseline_file or "not applied")}</p>
   <h2>Summary</h2>
   <ul>
     <li>Scanned files: {summary.scanned_files}</li>
@@ -130,11 +152,16 @@ def write_html_report(
     <li>High: {summary.high_count}</li>
     <li>Medium: {summary.medium_count}</li>
     <li>Low: {summary.low_count}</li>
+    <li>New findings: {summary.new_findings}</li>
+    <li>New critical: {summary.new_critical_count}</li>
+    <li>New high: {summary.new_high_count}</li>
+    <li>New medium: {summary.new_medium_count}</li>
+    <li>New low: {summary.new_low_count}</li>
   </ul>
   <h2>Findings</h2>
   <table>
     <thead>
-      <tr><th>Severity</th><th>Rule</th><th>Location</th><th>Message</th><th>Snippet</th></tr>
+      <tr><th>Status</th><th>Severity</th><th>Rule</th><th>Location</th><th>Message</th><th>Snippet</th></tr>
     </thead>
     <tbody>
       {finding_rows}

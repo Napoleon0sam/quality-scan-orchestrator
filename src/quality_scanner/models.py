@@ -116,6 +116,11 @@ class ScanSummary:
     high_count: int
     medium_count: int
     low_count: int
+    new_findings: int
+    new_critical_count: int
+    new_high_count: int
+    new_medium_count: int
+    new_low_count: int
 
     def to_dict(self) -> dict[str, int]:
         return asdict(self)
