@@ -278,9 +278,9 @@ class CliScanTests(unittest.TestCase):
 
         self.assertEqual(3, result)
 
-    def test_ci_target_uses_baseline_for_existing_high_finding(self) -> None:
+    def test_ci_target_uses_baseline_for_preexisting_high_findings(self) -> None:
         repository = Path(__file__).resolve().parents[1]
-        project = repository / "tests/fixtures/ci_target_project"
+        project = repository / "tests/fixtures/vulnerable_project"
 
         with tempfile.TemporaryDirectory() as tmp:
             result = main(
@@ -305,7 +305,7 @@ class CliScanTests(unittest.TestCase):
                 )
             )
 
-        self.assertEqual(1, scan_result["summary"]["findings"])
+        self.assertEqual(6, scan_result["summary"]["findings"])
         self.assertEqual(0, scan_result["summary"]["new_findings"])
         self.assertEqual(0, result)
 

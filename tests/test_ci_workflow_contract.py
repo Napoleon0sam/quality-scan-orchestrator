@@ -6,9 +6,9 @@ class CiWorkflowContractTests(unittest.TestCase):
     def test_codescan_ci_workflow_runs_tests_scan_and_uploads_reports(self) -> None:
         repository = Path(__file__).resolve().parents[1]
         workflow = repository / ".github/workflows/codescan-ci.yml"
-        ci_target = repository / "tests/fixtures/ci_target_project/app.py"
+        ci_target = repository / "tests/fixtures/vulnerable_project/app.py"
         ci_baseline = (
-            repository / "tests/fixtures/ci_target_project/codescan-baseline.json"
+            repository / "tests/fixtures/vulnerable_project/codescan-baseline.json"
         )
 
         self.assertTrue(workflow.is_file())
@@ -32,9 +32,9 @@ class CiWorkflowContractTests(unittest.TestCase):
         )
         self.assertIn("python -m coverage xml -o coverage.xml", text)
         self.assertIn("python -m quality_scanner scan", text)
-        self.assertIn("--project tests/fixtures/ci_target_project", text)
+        self.assertIn("--project tests/fixtures/vulnerable_project", text)
         self.assertIn(
-            "--baseline-file tests/fixtures/ci_target_project/codescan-baseline.json",
+            "--baseline-file tests/fixtures/vulnerable_project/codescan-baseline.json",
             text,
         )
         self.assertIn("--output reports/ci_target_full", text)

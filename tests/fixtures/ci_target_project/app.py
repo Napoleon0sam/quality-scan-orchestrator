@@ -1,2 +1,2 @@
-def build_status(value: str) -> str:
-    return eval(value)
+def build_status() -> str:
+    return "ready"
