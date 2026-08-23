@@ -10,6 +10,7 @@ from .models import ScanSummary
 from .quality_gate import evaluate
 from .reporting import utc_now, write_html_report, write_json_reports
 from .scanner import scan_files
+from .sonar_external import write_sonar_external_issues_report
 from .scope import ScanMode, select_scope
 
 
@@ -65,6 +66,11 @@ def _scan(args: argparse.Namespace) -> int:
     started_at = utc_now()
     project = Path(args.project).resolve()
     config_path = Path(args.config).resolve()
+    sonar_base_dir = (
+        Path(args.sonar_base_dir).resolve()
+        if args.sonar_base_dir
+        else project
+    )
     config = load_config(config_path)
 
     candidate_files = discover_python_files(project)
@@ -164,6 +170,13 @@ def _scan(args: argparse.Namespace) -> int:
         summary=summary,
         gate=gate,
     )
+    write_sonar_external_issues_report(
+        output,
+        findings=findings,
+        config=config,
+        project_root=project,
+        sonar_base_dir=sonar_base_dir,
+    )
 
     print(f"Status: {gate.status.value}")
     print(f"Scanned files: {summary.scanned_files}")
@@ -205,6 +218,14 @@ def main(argv: list[str] | None = None) -> int:
     scan_parser.add_argument(
         "--output",
         default="reports",
+    )
+
+    scan_parser.add_argument(
+        "--sonar-base-dir",
+        help=(
+            "Base directory used to write file paths in "
+            "sonar-external-issues.json."
+        ),
     )
 
     scan_parser.add_argument(

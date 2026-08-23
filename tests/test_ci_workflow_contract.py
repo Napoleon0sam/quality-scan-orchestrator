@@ -21,10 +21,16 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn("fetch-depth: 0", text)
         self.assertIn("actions/setup-python@", text)
         self.assertIn("python-version: '3.12'", text)
-        self.assertIn("python -m unittest discover -s tests -v", text)
+        self.assertIn("python -m pip install coverage", text)
+        self.assertIn(
+            "python -m coverage run -m unittest discover -s tests -v",
+            text,
+        )
+        self.assertIn("python -m coverage xml -o coverage.xml", text)
         self.assertIn("python -m quality_scanner scan", text)
         self.assertIn("--project tests/fixtures/ci_target_project", text)
         self.assertIn("--output reports/ci_target_full", text)
+        self.assertIn("--sonar-base-dir .", text)
         self.assertIn("actions/upload-artifact@", text)
         self.assertIn("if: always()", text)
 
@@ -37,12 +43,20 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertTrue(sonar_properties.is_file())
 
         workflow_text = workflow.read_text(encoding="utf-8")
+        self.assertIn("id: codescan", workflow_text)
+        self.assertIn("continue-on-error: true", workflow_text)
         self.assertIn("Run SonarQube Cloud scan", workflow_text)
         self.assertIn("SonarSource/sonarqube-scan-action@", workflow_text)
         self.assertIn("args: >", workflow_text)
+        self.assertIn(
+            "-Dsonar.externalIssuesReportPaths=reports/ci_target_full/sonar-external-issues.json",
+            workflow_text,
+        )
         self.assertIn("-Dsonar.qualitygate.wait=true", workflow_text)
         self.assertIn("-Dsonar.qualitygate.timeout=300", workflow_text)
         self.assertIn("SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}", workflow_text)
+        self.assertIn("Enforce CodeScan quality gate", workflow_text)
+        self.assertIn("steps.codescan.outcome == 'failure'", workflow_text)
 
         properties = sonar_properties.read_text(encoding="utf-8")
         self.assertIn("sonar.organization=napoleon0sam", properties)
@@ -53,6 +67,7 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn("sonar.sources=src,scripts", properties)
         self.assertIn("sonar.tests=tests", properties)
         self.assertIn("sonar.python.version=3.12", properties)
+        self.assertIn("sonar.python.coverage.reportPaths=coverage.xml", properties)
 
 
 if __name__ == "__main__":
