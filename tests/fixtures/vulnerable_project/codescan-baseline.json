@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-23T12:54:17Z",
+  "tool_version": "0.3.2",
+  "findings": [
+    {
+      "fingerprint": "f0821f6fcec5c682e849b940b13b96f737e2699ca704f23a8643c6b7aaa4cfa2",
+      "rule_id": "QSO-PY-SEC-003",
+      "path": "app.py",
+      "line": 4,
+      "column": 0,
+      "message": "Avoid hard-coded secrets."
+    },
+    {
+      "fingerprint": "f8c84781f908e179086eef7a51a367dfdda6e5197a9b78c48cd0c42a9339f021",
+      "rule_id": "QSO-PY-SEC-001",
+      "path": "app.py",
+      "line": 7,
+      "column": 11,
+      "message": "Avoid eval or exec."
+    },
+    {
+      "fingerprint": "515946f357eaf43b204a4860751e6a9de28238ba5a073b4300e810acb000785d",
+      "rule_id": "QSO-PY-SEC-002",
+      "path": "app.py",
+      "line": 10,
+      "column": 4,
+      "message": "Avoid unsafe shell execution."
+    },
+    {
+      "fingerprint": "52e4d8800ee5465642a0c8eff0a09dea2f1a207d910ca1393193b2090abe5ecb",
+      "rule_id": "QSO-PY-SEC-002",
+      "path": "app.py",
+      "line": 11,
+      "column": 4,
+      "message": "Avoid unsafe shell execution."
+    },
+    {
+      "fingerprint": "99ebf2e1fbe5107a5cff6a65daa047e75caa1923c911f7c303ca334b7261db0a",
+      "rule_id": "QSO-PY-REL-001",
+      "path": "app.py",
+      "line": 16,
+      "column": 4,
+      "message": "Avoid bare except handlers."
+    },
+    {
+      "fingerprint": "7e3570f88cae1bf4f0082c78fb5e964d0ade9a33aab353c7225df6c45c08f69d",
+      "rule_id": "QSO-PY-MNT-001",
+      "path": "app.py",
+      "line": 19,
+      "column": 0,
+      "message": "Function exceeds the configured line limit."
+    }
+  ]
+}
