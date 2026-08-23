@@ -21,7 +21,12 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn("fetch-depth: 0", text)
         self.assertIn("actions/setup-python@", text)
         self.assertIn("python-version: '3.12'", text)
-        self.assertIn("python -m unittest discover -s tests -v", text)
+        self.assertIn("python -m pip install coverage", text)
+        self.assertIn(
+            "python -m coverage run -m unittest discover -s tests -v",
+            text,
+        )
+        self.assertIn("python -m coverage xml -o coverage.xml", text)
         self.assertIn("python -m quality_scanner scan", text)
         self.assertIn("--project tests/fixtures/ci_target_project", text)
         self.assertIn("--output reports/ci_target_full", text)
@@ -62,6 +67,7 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn("sonar.sources=src,scripts", properties)
         self.assertIn("sonar.tests=tests", properties)
         self.assertIn("sonar.python.version=3.12", properties)
+        self.assertIn("sonar.python.coverage.reportPaths=coverage.xml", properties)
 
 
 if __name__ == "__main__":

@@ -110,12 +110,17 @@ The GitHub Actions workflow waits for the SonarQube Cloud Quality Gate result:
 
 ```text
 sonar.externalIssuesReportPaths=reports/ci_target_full/sonar-external-issues.json
+sonar.python.coverage.reportPaths=coverage.xml
 sonar.qualitygate.wait=true
 ```
 
 If the Sonar Quality Gate fails or times out, the SonarQube scan step fails the
 workflow. This is separate from GitHub branch protection, which must be enabled
 in repository settings before failed checks can block merges.
+
+SonarQube Cloud does not create Python coverage by itself. The CI workflow runs
+unit tests through Coverage.py, writes `coverage.xml`, and then SonarQube Cloud
+imports that file during analysis.
 
 The workflow lets the CodeScan step continue long enough for SonarQube Cloud to
 import `sonar-external-issues.json`, then enforces the CodeScan result in a
