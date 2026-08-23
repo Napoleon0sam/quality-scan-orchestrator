@@ -126,14 +126,20 @@ The workflow runs on:
 - pull request
 - manual workflow dispatch
 
-It compiles Python files, runs unit tests, runs CodeScan on a clean fixture,
+It compiles Python files, runs unit tests, runs CodeScan on the CI fixture,
 uploads the generated reports as a GitHub Actions artifact, and then runs
 SonarQube Cloud analysis.
 
-The repository currently demonstrates baseline behavior locally through the
-CLI. The CI example still scans a clean fixture and does not yet apply a
-repository-specific `--baseline-file`; connecting that baseline to the real CI
-target is the next operational step.
+The CI example now scans a target with one intentionally existing HIGH finding
+and applies its committed baseline file:
+
+```text
+tests/fixtures/ci_target_project/codescan-baseline.json
+```
+
+The finding remains visible in the uploaded reports, but the CodeScan quality
+gate passes because it is `EXISTING`. A new HIGH or CRITICAL finding that is not
+in the baseline remains blocking.
 
 For learning checkpoints, each trigger should be backed by its run URL and the
 uploaded `codescan-reports` artifact.

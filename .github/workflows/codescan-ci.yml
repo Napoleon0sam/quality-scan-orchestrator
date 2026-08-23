@@ -47,6 +47,7 @@ jobs:
           --project tests/fixtures/ci_target_project
           --config rules/default_rules.json
           --output reports/ci_target_full
+          --baseline-file tests/fixtures/ci_target_project/codescan-baseline.json
           --sonar-base-dir .
           --mode FULL
 

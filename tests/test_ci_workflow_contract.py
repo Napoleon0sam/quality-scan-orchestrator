@@ -7,9 +7,13 @@ class CiWorkflowContractTests(unittest.TestCase):
         repository = Path(__file__).resolve().parents[1]
         workflow = repository / ".github/workflows/codescan-ci.yml"
         ci_target = repository / "tests/fixtures/ci_target_project/app.py"
+        ci_baseline = (
+            repository / "tests/fixtures/ci_target_project/codescan-baseline.json"
+        )
 
         self.assertTrue(workflow.is_file())
         self.assertTrue(ci_target.is_file())
+        self.assertTrue(ci_baseline.is_file())
 
         text = workflow.read_text(encoding="utf-8")
         self.assertIn("CodeScan CI", text)
@@ -29,6 +33,10 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn("python -m coverage xml -o coverage.xml", text)
         self.assertIn("python -m quality_scanner scan", text)
         self.assertIn("--project tests/fixtures/ci_target_project", text)
+        self.assertIn(
+            "--baseline-file tests/fixtures/ci_target_project/codescan-baseline.json",
+            text,
+        )
         self.assertIn("--output reports/ci_target_full", text)
         self.assertIn("--sonar-base-dir .", text)
         self.assertIn("actions/upload-artifact@", text)

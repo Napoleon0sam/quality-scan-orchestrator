@@ -278,6 +278,37 @@ class CliScanTests(unittest.TestCase):
 
         self.assertEqual(3, result)
 
+    def test_ci_target_uses_baseline_for_existing_high_finding(self) -> None:
+        repository = Path(__file__).resolve().parents[1]
+        project = repository / "tests/fixtures/ci_target_project"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = main(
+                [
+                    "scan",
+                    "--project",
+                    str(project),
+                    "--config",
+                    "rules/default_rules.json",
+                    "--output",
+                    str(Path(tmp) / "reports"),
+                    "--mode",
+                    "FULL",
+                    "--baseline-file",
+                    str(project / "codescan-baseline.json"),
+                ]
+            )
+
+            scan_result = json.loads(
+                (Path(tmp) / "reports" / "scan-result.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(1, scan_result["summary"]["findings"])
+        self.assertEqual(0, scan_result["summary"]["new_findings"])
+        self.assertEqual(0, result)
+
     def test_scan_command_writes_error_report_for_syntax_error(self) -> None:
         root = (
             Path(__file__).resolve().parents[1]
