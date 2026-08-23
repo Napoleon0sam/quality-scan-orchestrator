@@ -1,7 +1,11 @@
 from .models import GateResult, GateStatus, ScanSummary
 
 
-def evaluate(summary: ScanSummary) -> GateResult:
+def evaluate(
+    summary: ScanSummary,
+    *,
+    baseline_applied: bool = False,
+) -> GateResult:
     if summary.errors:
         return GateResult(
             GateStatus.ERROR,
@@ -16,15 +20,23 @@ def evaluate(summary: ScanSummary) -> GateResult:
             3,
         )
 
-    if summary.critical_count or summary.high_count:
+    if summary.new_critical_count or summary.new_high_count:
         return GateResult(
             GateStatus.FAIL,
-            "Critical or high severity finding exists.",
+            (
+                "Critical or high severity new finding exists."
+                if baseline_applied
+                else "Critical or high severity finding exists."
+            ),
             1,
         )
 
     return GateResult(
         GateStatus.PASS,
-        "No blocking finding exists.",
+        (
+            "No new blocking finding exists; existing findings are baselined."
+            if baseline_applied
+            else "No blocking finding exists."
+        ),
         0,
     )

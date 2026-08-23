@@ -4,6 +4,12 @@ import subprocess
 import sys
 
 from . import __version__
+from .baseline import (
+    BaselineError,
+    classify_findings,
+    load_baseline,
+    write_baseline,
+)
 from .config import load_config
 from .discovery import discover_python_files
 from .models import ScanSummary
@@ -71,6 +77,19 @@ def _scan(args: argparse.Namespace) -> int:
         if args.sonar_base_dir
         else project
     )
+    baseline_file = (
+        Path(args.baseline_file).resolve()
+        if args.baseline_file
+        else None
+    )
+    finding_baseline = None
+    if baseline_file is not None:
+        try:
+            finding_baseline = load_baseline(baseline_file)
+        except BaselineError as exc:
+            print(f"Baseline error: {exc}", file=sys.stderr)
+            return 3
+
     config = load_config(config_path)
 
     candidate_files = discover_python_files(project)
@@ -115,6 +134,7 @@ def _scan(args: argparse.Namespace) -> int:
         scan_scope.selected_files,
         config,
     )
+    classification = classify_findings(findings, finding_baseline)
 
     high_count = sum(
         1 for finding in findings
@@ -136,6 +156,26 @@ def _scan(args: argparse.Namespace) -> int:
         if finding.severity.value == "LOW"
     )
 
+    new_high_count = sum(
+        1 for finding in classification.new
+        if finding.severity.value == "HIGH"
+    )
+
+    new_critical_count = sum(
+        1 for finding in classification.new
+        if finding.severity.value == "CRITICAL"
+    )
+
+    new_medium_count = sum(
+        1 for finding in classification.new
+        if finding.severity.value == "MEDIUM"
+    )
+
+    new_low_count = sum(
+        1 for finding in classification.new
+        if finding.severity.value == "LOW"
+    )
+
     summary = ScanSummary(
         scanned_files=len(scan_scope.selected_files),
         findings=len(findings),
@@ -144,12 +184,37 @@ def _scan(args: argparse.Namespace) -> int:
         high_count=high_count,
         medium_count=medium_count,
         low_count=low_count,
+        new_findings=len(classification.new),
+        new_critical_count=new_critical_count,
+        new_high_count=new_high_count,
+        new_medium_count=new_medium_count,
+        new_low_count=new_low_count,
     )
 
-    gate = evaluate(summary)
+    gate = evaluate(
+        summary,
+        baseline_applied=finding_baseline is not None,
+    )
 
     output = Path(args.output)
     finished_at = utc_now()
+    write_baseline_path = (
+        Path(args.write_baseline).resolve()
+        if args.write_baseline
+        else None
+    )
+    if write_baseline_path is not None and not errors:
+        try:
+            write_baseline(
+                write_baseline_path,
+                findings,
+                generated_at=finished_at,
+                tool_version=__version__,
+            )
+        except OSError as exc:
+            print(f"Could not write baseline: {exc}", file=sys.stderr)
+            return 3
+
     write_json_reports(
         output,
         findings=findings,
@@ -162,6 +227,15 @@ def _scan(args: argparse.Namespace) -> int:
         tool_version=__version__,
         started_at=started_at,
         finished_at=finished_at,
+        new_fingerprints=frozenset(
+            finding.fingerprint for finding in classification.new
+        ),
+        baseline_file=(str(baseline_file) if baseline_file is not None else None),
+        baseline_fingerprint_count=(
+            len(finding_baseline.fingerprints)
+            if finding_baseline is not None
+            else 0
+        ),
     )
     write_html_report(
         output,
@@ -169,6 +243,10 @@ def _scan(args: argparse.Namespace) -> int:
         errors=errors,
         summary=summary,
         gate=gate,
+        new_fingerprints=frozenset(
+            finding.fingerprint for finding in classification.new
+        ),
+        baseline_file=(str(baseline_file) if baseline_file is not None else None),
     )
     write_sonar_external_issues_report(
         output,
@@ -181,6 +259,9 @@ def _scan(args: argparse.Namespace) -> int:
     print(f"Status: {gate.status.value}")
     print(f"Scanned files: {summary.scanned_files}")
     print(f"Findings: {summary.findings}")
+    print(f"New findings: {summary.new_findings}")
+    if write_baseline_path is not None:
+        print(f"Baseline file: {write_baseline_path}")
     print(f"Report directory: {output}")
 
     return gate.exit_code
@@ -237,6 +318,19 @@ def main(argv: list[str] | None = None) -> int:
     scan_parser.add_argument(
         "--baseline",
         help="Git baseline revision used by FAST or AUTO mode.",
+    )
+
+    scan_parser.add_argument(
+        "--baseline-file",
+        help=(
+            "JSON file containing known finding fingerprints used by the "
+            "quality gate."
+        ),
+    )
+
+    scan_parser.add_argument(
+        "--write-baseline",
+        help="Write the current findings to a JSON baseline file.",
     )
 
     args = parser.parse_args(argv)
